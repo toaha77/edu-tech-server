@@ -33,20 +33,7 @@ async function run() {
     const featureCollection = client.db('study').collection('feature')
     const createCollection = client.db('study').collection('create-assignment')
 
-    // // auth related api
-    // app.post('/jwt', async(req, res)=>{
-    //   const user= req.body
-    //   console.log(user);
-    //   const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1h'})
-    //   res
-    //   .cookie('token', token, {
-    //     httpOnly: true,
-    //     secure: true,
-       
-    //     sameSite: 'none'
-    //   })
-    //   .send({success: true})
-    // })
+  
 
 
 // services related api
