@@ -1,4 +1,5 @@
 const express = require('express');
+const jwt = require('jsonwebtoken')
 const { MongoClient, ServerApiVersion, ObjectId } = require('mongodb');
 const cors = require('cors');
 const app = express();
@@ -7,7 +8,7 @@ const app = express();
 const port = process.env.PORT || 5000
 
 
-// app.use(cors());
+app.use(cors());
 app.use(express.json())
 
 
@@ -15,7 +16,7 @@ app.use(express.json())
 
 const uri = "mongodb+srv://hw1020471:BCq5Kfz4OhkoHD8P@cluster0.qpzgaq6.mongodb.net/?retryWrites=true&w=majority";
 
-// Create a MongoClient with a MongoClientOptions object to set the Stable API version
+ 
 const client = new MongoClient(uri, {
   serverApi: {
     version: ServerApiVersion.v1,
@@ -31,17 +32,39 @@ async function run() {
 
     const featureCollection = client.db('study').collection('feature')
     const createCollection = client.db('study').collection('create-assignment')
-    
 
+    // // auth related api
+    // app.post('/jwt', async(req, res)=>{
+    //   const user= req.body
+    //   console.log(user);
+    //   const token = jwt.sign(user, process.env.ACCESS_TOKEN_SECRET, {expiresIn: '1h'})
+    //   res
+    //   .cookie('token', token, {
+    //     httpOnly: true,
+    //     secure: true,
+       
+    //     sameSite: 'none'
+    //   })
+    //   .send({success: true})
+    // })
+
+
+// services related api
     app.get('/feature', async(req, res)=>{
         const cursor = featureCollection.find()
         const result =  await cursor.toArray()
         res.send(result)
     })
 
-    app.get('/create-assignment', async(req,res)=>{
-        const cursor = createCollection.find()
-        const result = await cursor.toArray()
+    app.get('/page-assignment', async(req,res)=>{
+      const page = parseInt(req.query.page)
+      const size = parseInt(req.query.size)
+       
+         
+        const result = await createCollection.find()
+        .skip(page * size)
+        .limit(size)
+        .toArray()
         res.send(result)
     })
     app.post('/create-assignment', async(req, res)=>{
@@ -51,11 +74,54 @@ async function run() {
         res.send(result)
     })
 
+    app.get('/create-assignment', async(req, res)=> {
+      let query = {}
+     if (req.query?.email) {
+      query = {email: req.query.email}
+     }
+      const result = await createCollection.find(query).toArray()
+      res.send(result)
+    })
+
     app.delete('/create-assignment/:id', async(req, res)=>{
         const id = req.params.id
         const query  = {_id: new ObjectId(id)}
         const result = await createCollection.deleteOne(query)
         res.send(result)
+    })
+
+    app.get('/create-assignment/:id', async (req, res) => {
+      const id = req.params.id
+      const query = {_id: new ObjectId(id)}
+      const result = await createCollection.findOne(query)
+      res.send(result)
+    })
+/ 
+
+    app.put('/create-assignment/:id', async (req, res) => {
+      const id = req.params.id
+      const query = {_id: new ObjectId(id)}
+      const options = {upsert: true}
+      const update=  req.body
+      const assignment = {
+        $set: {
+       
+          name: update.name,
+           marks: update.marks,
+           photo: update.photo,
+           data: update.data,
+           description: update.description,
+
+        }
+      }
+      const result = await createCollection.updateOne(query, assignment, options)
+      res.send(result)
+    })
+
+    app.get('/assignmentCount', async(req, res)=>{
+      const count = await createCollection.estimatedDocumentCount()
+     
+      res.send({count})
     })
     // Send a ping to confirm a successful connection
     await client.db("admin").command({ ping: 1 });
